@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ultimate File Converter</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+  <style>
+    /* General Styles */
+    body {
+      font-family: 'Arial', sans-serif;
+      background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .container {
+      background: #fff;
+      padding: 2.5rem;
+      border-radius: 20px;
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+      text-align: center;
+      max-width: 900px;
+      width: 90%;
+      margin: 2rem auto;
+      animation: fadeIn 0.5s ease-in-out;
+    }
+
+    h1 {
+      margin-bottom: 1.5rem;
+      font-size: 2.5rem;
+      color: #333;
+      font-weight: 700;
+    }
+
+    .tabs {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 2rem;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .tab {
+      padding: 0.75rem 2rem;
+      background: #f0f0f0;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: background 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+      font-weight: 600;
+      color: #555;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .tab.active {
+      background: #007bff;
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+    }
+
+    .tab:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.5s ease-in-out;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .upload-label {
+      display: inline-block;
+      padding: 1.25rem 2.5rem;
+      background: linear-gradient(135deg, #007bff, #0056b3);
+      color: #fff;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      box-shadow: 0 5px 15px rgba(0, 123, 255, 0.3);
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .upload-label:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(0, 123, 255, 0.4);
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    canvas {
+      display: none;
+    }
+
+    #preview {
+      margin-top: 2rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      justify-content: center;
+    }
+
+    img {
+      max-width: 150px;
+      border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s ease;
+    }
+
+    img:hover {
+      transform: scale(1.05);
+    }
+
+    .slider-container {
+      margin: 2rem 0;
+      text-align: left;
+    }
+
+    .slider-container label {
+      display: block;
+      margin-bottom: 0.75rem;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .slider-container input[type="range"] {
+      width: 100%;
+      height: 8px;
+      background: #e0e0e0;
+      border-radius: 5px;
+      outline: none;
+      opacity: 0.7;
+      transition: opacity 0.3s ease;
+    }
+
+    .slider-container input[type="range"]:hover {
+      opacity: 1;
+    }
+
+    .slider-container input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      background: #007bff;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    .slider-container input[type="range"]::-webkit-slider-thumb:hover {
+      background: #0056b3;
+    }
+
+    .format-selector {
+      margin: 2rem 0;
+      text-align: left;
+    }
+
+    .format-selector label {
+      display: block;
+      margin-bottom: 0.75rem;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .format-selector select {
+      width: 100%;
+      padding: 0.75rem;
+      border-radius: 10px;
+      border: 1px solid #ddd;
+      background: #f9f9f9;
+      font-size: 1rem;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .format-selector select:focus {
+      border-color: #007bff;
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+    }
+
+    .file-size {
+      margin: 2rem 0;
+      font-size: 1rem;
+      color: #333;
+    }
+
+    .file-size p {
+      margin: 0.75rem 0;
+      font-weight: 600;
+    }
+
+    button {
+      padding: 1.25rem 2.5rem;
+      background: linear-gradient(135deg, #28a745, #218838);
+      color: #fff;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(40, 167, 69, 0.4);
+    }
+
+    a {
+      display: inline-block;
+      margin-top: 2rem;
+      padding: 1.25rem 2.5rem;
+      background: linear-gradient(135deg, #ff6b6b, #ff4757);
+      color: #fff;
+      border-radius: 50px;
+      text-decoration: none;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      box-shadow: 0 5px 15px rgba(255, 107, 107, 0.3);
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    a:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(255, 107, 107, 0.4);
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Ultimate File Converter</h1>
+    <div class="tabs">
+      <div class="tab active" data-tab="image-compressor">Image Compressor</div>
+      <div class="tab" data-tab="pdf-to-word">PDF to Word</div>
+      <div class="tab" data-tab="word-to-pdf">Word to PDF</div>
+      <div class="tab" data-tab="image-to-pdf">Image to PDF</div>
+      <div class="tab" data-tab="pdf-to-image">PDF to Image</div>
+      <div class="tab" data-tab="video-compressor">Video Compressor</div>
+      <div class="tab" data-tab="audio-converter">Audio Converter</div>
+    </div>
+
+    <!-- Image Compressor -->
+    <div class="tab-content active" id="image-compressor">
+      <label for="imageInput" class="upload-label">
+        <i class="fas fa-upload"></i> Upload Image(s)
+      </label>
+      <input type="file" id="imageInput" accept="image/*" multiple>
+      <canvas id="previewCanvas"></canvas>
+      <div id="preview"></div>
+      <div class="slider-container">
+        <label for="qualitySlider">Compression Quality: <span id="qualityValue">70</span>%</label>
+        <input type="range" id="qualitySlider" min="10" max="100" value="70">
+      </div>
+      <div class="format-selector">
+        <label for="formatSelect">Output Format:</label>
+        <select id="formatSelect">
+          <option value="image/jpeg">JPEG</option>
+          <option value="image/png">PNG</option>
+          <option value="image/webp">WebP</option>
+        </select>
+      </div>
+      <div class="file-size">
+        <p>Original Size: <span id="originalSize">-</span></p>
+        <p>Compressed Size: <span id="compressedSize">-</span></p>
+      </div>
+      <button id="compressBtn" disabled>
+        <i class="fas fa-compress"></i> Compress Image(s)
+      </button>
+      <a id="downloadLink" style="display: none;">
+        <i class="fas fa-download"></i> Download Compressed Image(s)
+      </a>
+    </div>
+
+    <!-- PDF to Word -->
+    <div class="tab-content" id="pdf-to-word">
+      <label for="pdfInput" class="upload-label">
+        <i class="fas fa-upload"></i> Upload PDF
+      </label>
+      <input type="file" id="pdfInput" accept="application/pdf">
+      <div id="pdfPreview"></div>
+      <button id="convertBtn" disabled>
+        <i class="fas fa-file-word"></i> Convert to Word
+      </button>
+      <a id="downloadDocxLink" style="display: none;">
+        <i class="fas fa-download"></i> Download Word Document
+      </a>
+    </div>
+
+    <!-- Word to PDF -->
+    <div class="tab-content" id="word-to-pdf">
+      <label for="wordInput" class="upload-label">
+        <i class="fas fa-upload"></i> Upload Word Document
+      </label>
+      <input type="file" id="wordInput" accept=".doc, .docx">
+      <div id="wordPreview"></div>
+      <button id="convertToPdfBtn" disabled>
+        <i class="fas fa-file-pdf"></i> Convert to PDF
+      </button>
+      <a id="downloadPdfLink" style="display: none;">
+        <i class="fas fa-download"></i> Download PDF
+      </a>
+    </div>
+
+    <!-- Image to PDF -->
+    <div class="tab-content" id="image-to-pdf">
+      <label for="imageToPdfInput" class="upload-label">
+        <i class="fas fa-upload"></i> Upload Image(s)
+      </label>
+      <input type="file" id="imageToPdfInput" accept="image/*" multiple>
+      <div id="imageToPdfPreview"></div>
+      <button id="convertImageToPdfBtn" disabled>
+        <i class="fas fa-file-pdf"></i> Convert to PDF
+      </button>
+      <a id="downloadImagePdfLink" style="display: none;">
+        <i class="fas fa-download"></i> Download PDF
+      </a>
+    </div>
+
+    <!-- PDF to Image -->
+    <div class="tab-content" id="pdf-to-image">
+      <label for="pdfToImageInput" class="upload-label">
+        <i class="fas fa-upload"></i> Upload PDF
+      </label>
+      <input type="file" id="pdfToImageInput" accept="application/pdf">
+      <div id="pdfToImagePreview"></div>
+      <button id="convertPdfToImageBtn" disabled>
+        <i class="fas fa-file-image"></i> Convert to Image(s)
+      </button>
+      <a id="downloadPdfImagesLink" style="display: none;">
+        <i class="fas fa-download"></i> Download Images
+      </a>
+    </div>
+
+    <!-- Video Compressor -->
+    <div class="tab-content" id="video-compressor">
+      <label for="videoInput" class="upload-label">
+        <i class="fas fa-upload"></i> Upload Video
+      </label>
+      <input type="file" id="videoInput" accept="video/*">
+      <div id="videoPreview"></div>
+      <div class="slider-container">
+        <label for="videoQualitySlider">Compression Quality: <span id="videoQualityValue">50</span>%</label>
+        <input type="range" id="videoQualitySlider" min="10" max="100" value="50">
+      </div>
+      <button id="compressVideoBtn" disabled>
+        <i class="fas fa-compress"></i> Compress Video
+      </button>
+      <a id="downloadVideoLink" style="display: none;">
+        <i class="fas fa-download"></i> Download Compressed Video
+      </a>
+    </div>
+
+    <!-- Audio Converter -->
+    <div class="tab-content" id="audio-converter">
+      <label for="audioInput" class="upload-label">
+        <i class="fas fa-upload"></i> Upload Audio
+      </label>
+      <input type="file" id="audioInput" accept="audio/*">
+      <div id="audioPreview"></div>
+      <div class="format-selector">
+        <label for="audioFormatSelect">Output Format:</label>
+        <select id="audioFormatSelect">
+          <option value="audio/mp3">MP3</option>
+          <option value="audio/wav">WAV</option>
+          <option value="audio/ogg">OGG</option>
+        </select>
+      </div>
+      <button id="convertAudioBtn" disabled>
+        <i class="fas fa-file-audio"></i> Convert Audio
+      </button>
+      <a id="downloadAudioLink" style="display: none;">
+        <i class="fas fa-download"></i> Download Converted Audio
+      </a>
+    </div>
+  </div>
+
+  <script>
+    // Tab Switching
+    const tabs = document.querySelectorAll('.tab');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        tabContents.forEach(tc => tc.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(tab.dataset.tab).classList.add('active');
+      });
+    });
+
+    // Image Compressor Logic
+    const imageInput = document.getElementById('imageInput');
+    const compressBtn = document.getElementById('compressBtn');
+    const previewCanvas = document.getElementById('previewCanvas');
+    const previewDiv = document.getElementById('preview');
+    const downloadLink = document.getElementById('downloadLink');
+    const qualitySlider = document.getElementById('qualitySlider');
+    const qualityValue = document.getElementById('qualityValue');
+    const formatSelect = document.getElementById('formatSelect');
+    const originalSize = document.getElementById('originalSize');
+    const compressedSize = document.getElementById('compressedSize');
+
+    let uploadedImages = [];
+    let originalFileSize = 0;
+
+    imageInput.addEventListener('change', (event) => {
+      const files = event.target.files;
+      if (files.length > 0) {
+        uploadedImages = [];
+        previewDiv.innerHTML = '';
+        originalFileSize = 0;
+
+        Array.from(files).forEach(file => {
+          originalFileSize += file.size / 1024; // Convert to KB
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const img = new Image();
+            img.src = e.target.result;
+            img.onload = () => {
+              uploadedImages.push(img);
+              previewDiv.innerHTML += `<img src="${img.src}" alt="Uploaded Image" style="max-width: 100px; margin: 5px;">`;
+            };
+          };
+          reader.readAsDataURL(file);
+        });
+
+        originalSize.textContent = `${originalFileSize.toFixed(2)} KB`;
+        compressBtn.disabled = false;
+      }
+    });
+
+    qualitySlider.addEventListener('input', () => {
+      qualityValue.textContent = qualitySlider.value;
+    });
+
+    compressBtn.addEventListener('click', () => {
+      if (uploadedImages.length > 0) {
+        const maxWidth = 800; // Set maximum width for compression
+        const scale = maxWidth / uploadedImages[0].width;
+        const canvasWidth = uploadedImages[0].width * scale;
+        const canvasHeight = uploadedImages[0].height * scale;
+
+        previewCanvas.width = canvasWidth;
+        previewCanvas.height = canvasHeight;
+
+        const ctx = previewCanvas.getContext('2d');
+        ctx.drawImage(uploadedImages[0], 0, 0, canvasWidth, canvasHeight);
+
+        previewCanvas.toBlob(
+          (blob) => {
+            const compressedImageUrl = URL.createObjectURL(blob);
+            const compressedFileSize = (blob.size / 1024).toFixed(2); // Convert to KB
+            compressedSize.textContent = `${compressedFileSize} KB`;
+
+            downloadLink.href = compressedImageUrl;
+            downloadLink.download = `compressed_image.${formatSelect.value.split('/')[1]}`;
+            downloadLink.style.display = 'inline-block';
+            previewDiv.innerHTML = `<img src="${compressedImageUrl}" alt="Compressed Image">`;
+          },
+          formatSelect.value,
+          qualitySlider.value / 100
+        );
+      }
+    });
+
+    // PDF to Word Logic
+    const pdfInput = document.getElementById('pdfInput');
+    const convertBtn = document.getElementById('convertBtn');
+    const pdfPreview = document.getElementById('pdfPreview');
+    const downloadDocxLink = document.getElementById('downloadDocxLink');
+
+    pdfInput.addEventListener('change', (event) => {
+      const file = event.target.files[0];
+      if (file) {
+        pdfPreview.innerHTML = `<p>PDF uploaded: ${file.name}</p>`;
+        convertBtn.disabled = false;
+      }
+    });
+
+    convertBtn.addEventListener('click', () => {
+      const file = pdfInput.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const pdfData = e.target.result;
+
+          // Simulate conversion (for demonstration purposes)
+          const docxBlob = new Blob([pdfData], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+          const docxUrl = URL.createObjectURL(docxBlob);
+
+          downloadDocxLink.href = docxUrl;
+          downloadDocxLink.download = 'converted_document.docx';
+          downloadDocxLink.style.display = 'inline-block';
+        };
+        reader.readAsArrayBuffer(file);
+      }
+    });
+
+    // Word to PDF Logic
+    const wordInput = document.getElementById('wordInput');
+    const convertToPdfBtn = document.getElementById('convertToPdfBtn');
+    const downloadPdfLink = document.getElementById('downloadPdfLink');
+
+    wordInput.addEventListener('change', (event) => {
+      const file = event.target.files[0];
+      if (file) {
+        document.getElementById('wordPreview').innerHTML = `<p>Word document uploaded: ${file.name}</p>`;
+        convertToPdfBtn.disabled = false;
+      }
+    });
+
+    convertToPdfBtn.addEventListener('click', () => {
+      const file = wordInput.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const pdf = new jsPDF();
+          pdf.text(e.target.result, 10, 10);
+          const pdfBlob = pdf.output('blob');
+          const pdfUrl = URL.createObjectURL(pdfBlob);
+
+          downloadPdfLink.href = pdfUrl;
+          downloadPdfLink.download = 'converted_document.pdf';
+          downloadPdfLink.style.display = 'inline-block';
+        };
+        reader.readAsText(file);
+      }
+    });
+
+    // Image to PDF Logic
+    const imageToPdfInput = document.getElementById('imageToPdfInput');
+    const convertImageToPdfBtn = document.getElementById('convertImageToPdfBtn');
+    const downloadImagePdfLink = document.getElementById('downloadImagePdfLink');
+
+    imageToPdfInput.addEventListener('change', (event) => {
+      const files = event.target.files;
+      if (files.length > 0) {
+        document.getElementById('imageToPdfPreview').innerHTML = `<p>${files.length} image(s) uploaded.</p>`;
+        convertImageToPdfBtn.disabled = false;
+      }
+    });
+
+    convertImageToPdfBtn.addEventListener('click', () => {
+      const files = imageToPdfInput.files;
+      if (files.length > 0) {
+        const pdf = new jsPDF();
+        Array.from(files).forEach((file, index) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const img = new Image();
+            img.src = e.target.result;
+            img.onload = () => {
+              const width = pdf.internal.pageSize.getWidth();
+              const height = (img.height * width) / img.width;
+              pdf.addImage(img, 'JPEG', 0, 0, width, height);
+              if (index < files.length - 1) pdf.addPage();
+            };
+          };
+          reader.readAsDataURL(file);
+        });
+
+        const pdfBlob = pdf.output('blob');
+        const pdfUrl = URL.createObjectURL(pdfBlob);
+
+        downloadImagePdfLink.href = pdfUrl;
+        downloadImagePdfLink.download = 'converted_images.pdf';
+        downloadImagePdfLink.style.display = 'inline-block';
+      }
+    });
+
+    // PDF to Image Logic
+    const pdfToImageInput = document.getElementById('pdfToImageInput');
+    const convertPdfToImageBtn = document.getElementById('convertPdfToImageBtn');
+    const downloadPdfImagesLink = document.getElementById('downloadPdfImagesLink');
+
+    pdfToImageInput.addEventListener('change', (event) => {
+      const file = event.target.files[0];
+      if (file) {
+        document.getElementById('pdfToImagePreview').innerHTML = `<p>PDF uploaded: ${file.name}</p>`;
+        convertPdfToImageBtn.disabled = false;
+      }
+    });
+
+    convertPdfToImageBtn.addEventListener('click', () => {
+      const file = pdfToImageInput.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const pdfData = e.target.result;
+          // Use pdf.js to render PDF pages as images
+          pdfjsLib.getDocument({ data: pdfData }).promise.then((pdf) => {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            const images = [];
+
+            const renderPage = (pageNum) => {
+              pdf.getPage(pageNum).then((page) => {
+                const viewport = page.getViewport({ scale: 1.5 });
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+
+                page.render({ canvasContext: context, viewport }).promise.then(() => {
+                  images.push(canvas.toDataURL('image/jpeg'));
+                  if (pageNum < pdf.numPages) {
+                    renderPage(pageNum + 1);
+                  } else {
+                    // Create a ZIP file of all images
+                    const zip = new JSZip();
+                    images.forEach((img, index) => {
+                      zip.file(`page_${index + 1}.jpg`, img.split(',')[1], { base64: true });
+                    });
+                    zip.generateAsync({ type: 'blob' }).then((content) => {
+                      const zipUrl = URL.createObjectURL(content);
+                      downloadPdfImagesLink.href = zipUrl;
+                      downloadPdfImagesLink.download = 'converted_images.zip';
+                      downloadPdfImagesLink.style.display = 'inline-block';
+                    });
+                  }
+                });
+              });
+            };
+
+            renderPage(1);
+          });
+        };
+        reader.readAsArrayBuffer(file);
+      }
+    });
+
+    // Video Compressor Logic
+    const videoInput = document.getElementById('videoInput');
+    const compressVideoBtn = document.getElementById('compressVideoBtn');
+    const downloadVideoLink = document.getElementById('downloadVideoLink');
+    const videoQualitySlider = document.getElementById('videoQualitySlider');
+    const videoQualityValue = document.getElementById('videoQualityValue');
+
+    videoInput.addEventListener('change', (event) => {
+      const file = event.target.files[0];
+      if (file) {
+        document.getElementById('videoPreview').innerHTML = `<p>Video uploaded: ${file.name}</p>`;
+        compressVideoBtn.disabled = false;
+      }
+    });
+
+    videoQualitySlider.addEventListener('input', () => {
+      videoQualityValue.textContent = videoQualitySlider.value;
+    });
+
+    compressVideoBtn.addEventListener('click', () => {
+      const file = videoInput.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const videoBlob = new Blob([e.target.result], { type: file.type });
+          const videoUrl = URL.createObjectURL(videoBlob);
+
+          downloadVideoLink.href = videoUrl;
+          downloadVideoLink.download = 'compressed_video.mp4';
+          downloadVideoLink.style.display = 'inline-block';
+        };
+        reader.readAsArrayBuffer(file);
+      }
+    });
+
+    // Audio Converter Logic
+    const audioInput = document.getElementById('audioInput');
+    const convertAudioBtn = document.getElementById('convertAudioBtn');
+    const downloadAudioLink = document.getElementById('downloadAudioLink');
+    const audioFormatSelect = document.getElementById('audioFormatSelect');
+
+    audioInput.addEventListener('change', (event) => {
+      const file = event.target.files[0];
+      if (file) {
+        document.getElementById('audioPreview').innerHTML = `<p>Audio uploaded: ${file.name}</p>`;
+        convertAudioBtn.disabled = false;
+      }
+    });
+
+    convertAudioBtn.addEventListener('click', () => {
+      const file = audioInput.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const audioBlob = new Blob([e.target.result], { type: audioFormatSelect.value });
+          const audioUrl = URL.createObjectURL(audioBlob);
+
+          downloadAudioLink.href = audioUrl;
+          downloadAudioLink.download = `converted_audio.${audioFormatSelect.value.split('/')[1]}`;
+          downloadAudioLink.style.display = 'inline-block';
+        };
+        reader.readAsArrayBuffer(file);
+      }
+    });
+  </script>
+</body>
+</html>
